@@ -3,49 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animated Purple Dragon</title>
+    <title>Dragon Corridor</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<h1>Dragon Corridor</h1>
+<p>Use Arrow Keys to move the Dragon</p>
+<canvas id="gameCanvas"></canvas>
 
-<div class="dragon">
-    <!-- Body First for Z-index layering -->
-    <div class="neck"></div>
-    <div class="body">
-        <div class="arm arm-left"></div>
-        <div class="arm arm-right"></div>
-    </div>
-    <div class="tail-base"></div>
-    <div class="tail-end">
-         <div class="tail-line"></div>
-    </div>
-    
-    <!-- Right Wing (Behind Body) -->
-    <div class="wing wing-right">
-        <div class="membrane m1"></div>
-        <div class="membrane m2"></div>
-        <div class="strut s1"></div>
-        <div class="strut s2"></div>
-    </div>
-    
-    <!-- Head -->
-    <div class="head">
-        <div class="eye">
-            <div class="pupil"></div>
-        </div>
-        <div class="snout"></div>
-        <div class="crest"></div>
-    </div>
+<!-- IMPORTANT: Make sure the dragon image is in the same folder as this file -->
+<img id="dragon-sprite" src="dragon.png" alt="Dragon Sprite" style="display:none;">
 
-    <!-- Left Wing (In Front) -->
-    <div class="wing wing-left">
-        <div class="membrane m1"></div>
-        <div class="membrane m2"></div>
-        <div class="strut s1"></div>
-        <div class="strut s2"></div>
-        <div class="strut s3"></div>
-    </div>
-</div>
-
+<script src="script.js"></script>
 </body>
 </html>

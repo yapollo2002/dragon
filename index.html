@@ -2,16 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- This tag is essential for mobile devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Dragon Corridor</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <h1>Dragon Corridor</h1>
-<p>Use Arrow Keys to move the Dragon</p>
 <canvas id="gameCanvas"></canvas>
 
-<!-- IMPORTANT: Make sure the dragon image is in the same folder as this file -->
+<!-- On-screen controls for mobile -->
+<div id="controls">
+    <div class="d-pad">
+        <button id="up-btn" class="control-btn">▲</button>
+        <div class="middle-row">
+            <button id="left-btn" class="control-btn">◄</button>
+            <button id="down-btn" class="control-btn">▼</button>
+            <button id="right-btn" class="control-btn">►</button>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden image used by the canvas -->
 <img id="dragon-sprite" src="dragon.png" alt="Dragon Sprite" style="display:none;">
 
 <script src="script.js"></script>

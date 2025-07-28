@@ -1,31 +1,29 @@
-// --- Basic Setup ---
+// --- 1. BASIC SETUP ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const dragonImg = document.getElementById('dragon-sprite');
 
-// --- Game Configuration ---
-const TILE_SIZE = 40; // The size of each grid cell in pixels
+// --- 2. GAME CONFIGURATION ---
+const TILE_SIZE = 40; // The size in pixels of each grid square
 const MAP_NUM_ROWS = 15;
 const MAP_NUM_COLS = 20;
 
-// Set canvas dimensions based on the grid
+// Set the canvas dimensions based on the grid size
 canvas.width = MAP_NUM_COLS * TILE_SIZE;
 canvas.height = MAP_NUM_ROWS * TILE_SIZE;
 
-// --- Game Objects ---
-
-// The player (dragon) object
+// --- 3. GAME STATE (Player and Level) ---
 const player = {
-    x: TILE_SIZE * 1, // Starting X position on the grid
-    y: TILE_SIZE * 7, // Starting Y position on the grid
+    x: TILE_SIZE * 1, // Start at column 1
+    y: TILE_SIZE * 7, // Start at row 7
     width: TILE_SIZE,
     height: TILE_SIZE,
     speed: 4,
-    dx: 0, // Change in x-direction
-    dy: 0  // Change in y-direction
+    dx: 0, // Current speed in x-direction (horizontal)
+    dy: 0  // Current speed in y-direction (vertical)
 };
 
-// The level layout (1 = wall, 0 = path)
+// The level layout: 1 represents a wall, 0 represents an open path
 const levelMap = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
@@ -44,66 +42,42 @@ const levelMap = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
 
-// --- Drawing Functions ---
+// --- 4. DRAWING FUNCTIONS ---
+function drawPlayer() { ctx.drawImage(dragonImg, player.x, player.y, player.width, player.height); }
 
-// Draw the player
-function drawPlayer() {
-    ctx.drawImage(dragonImg, player.x, player.y, player.width, player.height);
-}
-
-// Draw the level map
 function drawMap() {
     for (let row = 0; row < MAP_NUM_ROWS; row++) {
         for (let col = 0; col < MAP_NUM_COLS; col++) {
-            const tile = levelMap[row][col];
-            if (tile === 1) { // If it's a wall tile
-                ctx.fillStyle = '#222'; // Darker grey for walls
+            if (levelMap[row][col] === 1) { // Check if the tile is a wall
+                ctx.fillStyle = '#222';
                 ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
             }
         }
     }
 }
 
-// --- Game Logic Functions ---
+// --- 5. GAME LOGIC ---
+function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
-// Clear the canvas for the next frame
-function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-// Update player's position
 function movePlayer() {
     player.x += player.dx;
     player.y += player.dy;
-
-    // Check for collision after moving
     handleCollisions();
 }
 
-// Collision detection with the walls
 function handleCollisions() {
     for (let row = 0; row < MAP_NUM_ROWS; row++) {
         for (let col = 0; col < MAP_NUM_COLS; col++) {
-            const tile = levelMap[row][col];
-            if (tile === 1) { // Is it a wall?
-                const wall = {
-                    x: col * TILE_SIZE,
-                    y: row * TILE_SIZE,
-                    width: TILE_SIZE,
-                    height: TILE_SIZE
-                };
-
-                // Check for collision between player and wall
+            if (levelMap[row][col] === 1) { // Check only against wall tiles
+                const wall = { x: col * TILE_SIZE, y: row * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
                 if (
-                    player.x < wall.x + wall.width &&
-                    player.x + player.width > wall.x &&
-                    player.y < wall.y + wall.height &&
-                    player.y + player.height > wall.y
+                    player.x < wall.x + wall.width && player.x + player.width > wall.x &&
+                    player.y < wall.y + wall.height && player.y + player.height > wall.y
                 ) {
-                    // Collision detected! Move player back to previous position
+                    // If a collision occurs, revert the movement
                     player.x -= player.dx;
                     player.y -= player.dy;
-                    // Stop further movement in this frame
+                    // Stop movement
                     player.dx = 0;
                     player.dy = 0;
                 }
@@ -112,65 +86,56 @@ function handleCollisions() {
     }
 }
 
-// --- Keyboard Input ---
-function handleKeyDown(e) {
-    // Prevent default browser actions for arrow keys
-    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        e.preventDefault();
-    }
+// --- 6. INPUT HANDLERS ---
+// Keyboard Controls (for desktop)
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'd') player.dx = player.speed;
+    else if (e.key === 'ArrowLeft' || e.key === 'a') player.dx = -player.speed;
+    else if (e.key === 'ArrowUp' || e.key === 'w') player.dy = -player.speed;
+    else if (e.key === 'ArrowDown' || e.key === 's') player.dy = player.speed;
+});
 
-    // Set movement direction
-    if (e.key === 'ArrowRight' || e.key === 'd') {
-        player.dx = player.speed;
-    } else if (e.key === 'ArrowLeft' || e.key === 'a') {
-        player.dx = -player.speed;
-    } else if (e.key === 'ArrowUp' || e.key === 'w') {
-        player.dy = -player.speed;
-    } else if (e.key === 'ArrowDown' || e.key === 's') {
-        player.dy = player.speed;
-    }
+document.addEventListener('keyup', (e) => {
+    if (['ArrowRight', 'd', 'ArrowLeft', 'a'].includes(e.key)) player.dx = 0;
+    if (['ArrowUp', 'w', 'ArrowDown', 's'].includes(e.key)) player.dy = 0;
+});
+
+// Touch and Mouse Controls for On-Screen Buttons
+const upBtn = document.getElementById('up-btn');
+const downBtn = document.getElementById('down-btn');
+const leftBtn = document.getElementById('left-btn');
+const rightBtn = document.getElementById('right-btn');
+
+function addTouchAndMouseListeners(element, actionStart, actionEnd) {
+    // Mobile touch events
+    element.addEventListener('touchstart', (e) => { e.preventDefault(); actionStart(); }, { passive: false });
+    element.addEventListener('touchend', (e) => { e.preventDefault(); actionEnd(); });
+    // Desktop mouse events
+    element.addEventListener('mousedown', (e) => { e.preventDefault(); actionStart(); });
+    element.addEventListener('mouseup', (e) => { e.preventDefault(); actionEnd(); });
+    element.addEventListener('mouseleave', (e) => { e.preventDefault(); actionEnd(); });
 }
 
-function handleKeyUp(e) {
-    // Stop movement when key is released
-    if (
-        e.key === 'ArrowRight' || e.key === 'd' ||
-        e.key === 'ArrowLeft' || e.key === 'a'
-    ) {
-        player.dx = 0;
-    }
-    if (
-        e.key === 'ArrowUp' || e.key === 'w' ||
-        e.key === 'ArrowDown' || e.key === 's'
-    ) {
-        player.dy = 0;
-    }
-}
+addTouchAndMouseListeners(upBtn,    () => player.dy = -player.speed, () => player.dy = 0);
+addTouchAndMouseListeners(downBtn,  () => player.dy = player.speed,  () => player.dy = 0);
+addTouchAndMouseListeners(leftBtn,  () => player.dx = -player.speed, () => player.dx = 0);
+addTouchAndMouseListeners(rightBtn, () => player.dx = player.speed,  () => player.dx = 0);
 
-document.addEventListener('keydown', handleKeyDown);
-document.addEventListener('keyup', handleKeyUp);
-
-
-// --- The Game Loop ---
+// --- 7. THE GAME LOOP ---
 function update() {
-    clearCanvas();
-
-    drawMap(); // Draw the background first
-
-    movePlayer();
-
-    drawPlayer(); // Draw the player on top
-
-    // This creates a continuous loop for animation
-    requestAnimationFrame(update);
+    clearCanvas();  // Erase the previous frame
+    drawMap();      // Draw the walls/background
+    movePlayer();   // Update player position and check collisions
+    drawPlayer();   // Draw the player in the new position
+    requestAnimationFrame(update); // Request the next frame, creating the loop
 }
 
-// Start the game loop only after the image has fully loaded
+// --- 8. START THE GAME ---
+// Wait for the dragon image to fully load before starting the game loop
 dragonImg.onload = () => {
     update();
 };
-
-// A fallback in case the image is already cached and the 'onload' doesn't fire
+// Fallback if the image is already cached by the browser
 if (dragonImg.complete) {
     update();
 }

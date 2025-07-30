@@ -1,4 +1,4 @@
-/* --- General Page Styles (Mostly Unchanged) --- */
+/* --- General Page Styles (Unchanged) --- */
 body {
     background-color: #1a1a1a;
     color: #ffffff;
@@ -10,93 +10,35 @@ body {
     padding-top: 10px;
     overflow: hidden;
 }
+h1 { margin: 0 0 10px 0; font-size: 1.5em; }
 
-h1 {
-    margin: 0 0 10px 0;
-    font-size: 1.5em;
-}
+/* --- Game Container Style (Unchanged) --- */
+#game-container { position: relative; width: fit-content; height: fit-content; }
 
-/* --- New Game Container Style --- */
-#game-container {
-    position: relative; /* This is crucial for positioning the overlay */
-    width: fit-content;
-    height: fit-content;
-}
-
-/* --- Game Canvas Style (Unchanged) --- */
+/* --- Game Canvas Style (COLOR CHANGED) --- */
 #gameCanvas {
-    background-color: #4a4a4a;
+    /* CHANGED: This is now the green floor of the labyrinth */
+    background-color: #556B2F; /* A dark olive green */
     border: 3px solid #f0f0f0;
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
     max-width: 100%;
     box-sizing: border-box;
-    /* Make sure the canvas is not hidden behind the overlay initially */
     display: block;
 }
 
-/* --- New Game Over Screen Styles --- */
-#game-over-screen {
-    position: absolute; /* Positions it on top of the canvas */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.75); /* Dark semi-transparent background */
-    color: white;
-    display: none; /* Hidden by default */
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-}
-
-#game-over-screen.visible {
-    display: flex; /* This class will be added by JS to show the screen */
-}
-
-#restart-btn {
-    padding: 10px 20px;
-    font-size: 16px;
-    color: black;
-    background-color: #fff;
-    border: 2px solid #ccc;
-    border-radius: 10px;
-    cursor: pointer;
-    margin-top: 20px;
-}
-
-#restart-btn:hover {
-    background-color: #eee;
-}
-
+/* --- Game Over Screen Styles (Unchanged) --- */
+#game-over-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); color: white; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+#game-over-screen.visible { display: flex; }
+#restart-btn { padding: 10px 20px; font-size: 16px; color: black; background-color: #fff; border: 2px solid #ccc; border-radius: 10px; cursor: pointer; margin-top: 20px; }
+#restart-btn:hover { background-color: #eee; }
 
 /* --- On-Screen Controls Styles (Unchanged) --- */
-#controls {
-    margin-top: 15px; /* Added some space above the controls */
-    user-select: none;
-    -webkit-user-select: none;
-}
-
-.d-pad { /* ... rest of D-pad styles are the same ... */
-    display: grid;
-    grid-template-areas:
-        ". up ."
-        "left down right";
-    gap: 10px;
-}
+#controls { margin-top: 15px; user-select: none; -webkit-user-select: none; }
+.d-pad { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; }
 #up-btn { grid-area: up; }
 #left-btn { grid-area: left; }
 #down-btn { grid-area: down; }
 #right-btn { grid-area: right; }
-.middle-row {
-    grid-area: left / left / right / right;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-}
-.control-btn {
-    width: 60px; height: 60px; background-color: rgba(50, 50, 50, 0.7);
-    border: 2px solid #fff; border-radius: 15px; color: #fff; font-size: 24px;
-    font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer;
-}
+.middle-row { grid-area: left / left / right / right; display: flex; justify-content: center; gap: 10px; }
+.control-btn { width: 60px; height: 60px; background-color: rgba(50, 50, 50, 0.7); border: 2px solid #fff; border-radius: 15px; color: #fff; font-size: 24px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; }
 .control-btn:active { background-color: rgba(255, 255, 255, 0.5); transform: scale(0.95); }

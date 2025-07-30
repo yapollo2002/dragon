@@ -10,7 +10,6 @@
 <h1>Dragon Corridor</h1>
 <div id="game-container">
     <canvas id="gameCanvas"></canvas>
-    <!-- This screen is hidden by default and appears when the game is over -->
     <div id="game-over-screen">
         <h2>Game Over!</h2>
         <p>The dragon was caught.</p>
@@ -33,6 +32,10 @@
 <img id="dragon-sprite" src="dragon.png" alt="Dragon Sprite" style="display:none;">
 <img id="cat-sprite" src="cat.png" alt="Cat Sprite" style="display:none;">
 <img id="robot-sprite" src="robot.png" alt="Robot Sprite" style="display:none;">
+
+<!-- NEW: Hidden audio elements for sound effects -->
+<audio id="move-sound" src="move.wav" preload="auto"></audio>
+<audio id="game-over-sound" src="game-over.wav" preload="auto"></audio>
 
 <script src="script.js"></script>
 </body>

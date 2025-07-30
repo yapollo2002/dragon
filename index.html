@@ -2,16 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- This tag is essential for mobile devices -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Dragon Corridor</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <h1>Dragon Corridor</h1>
-<canvas id="gameCanvas"></canvas>
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    <!-- This screen is hidden by default and appears when the game is over -->
+    <div id="game-over-screen">
+        <h2>Game Over!</h2>
+        <p>The dragon was caught.</p>
+        <button id="restart-btn">Play Again</button>
+    </div>
+</div>
 
-<!-- On-screen controls for mobile -->
 <div id="controls">
     <div class="d-pad">
         <button id="up-btn" class="control-btn">▲</button>
@@ -23,8 +29,10 @@
     </div>
 </div>
 
-<!-- Hidden image used by the canvas -->
+<!-- Hidden images for game characters -->
 <img id="dragon-sprite" src="dragon.png" alt="Dragon Sprite" style="display:none;">
+<img id="cat-sprite" src="cat.png" alt="Cat Sprite" style="display:none;">
+<img id="robot-sprite"src="robot.png" alt="Robot Sprite" style="display:none;">
 
 <script src="script.js"></script>
 </body>

@@ -26,12 +26,12 @@ const player = {
     speed: 4, dx: 0, dy: 0
 };
 
-// Enemy objects with increased speed
+// Enemy objects with doubled speed
 const cat = {
     img: catImg,
     x: TILE_SIZE * 18, y: TILE_SIZE * 1,
     width: TILE_SIZE, height: TILE_SIZE,
-    speed: 2.2, // CHANGED: Was 1.5, now faster
+    speed: 4.4, // CHANGED: Was 2.2. Now faster than the player!
     dx: 0, dy: 0
 };
 
@@ -39,7 +39,7 @@ const robot = {
     img: robotImg,
     x: TILE_SIZE * 18, y: TILE_SIZE * 13,
     width: TILE_SIZE, height: TILE_SIZE,
-    speed: 1.8, // CHANGED: Was 1, now faster
+    speed: 3.6, // CHANGED: Was 1.8. Now almost as fast as the player.
     dx: 0, dy: 0
 };
 

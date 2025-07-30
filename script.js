@@ -26,19 +26,21 @@ const player = {
     speed: 4, dx: 0, dy: 0
 };
 
-// Enemy objects
+// Enemy objects with increased speed
 const cat = {
     img: catImg,
     x: TILE_SIZE * 18, y: TILE_SIZE * 1,
     width: TILE_SIZE, height: TILE_SIZE,
-    speed: 1.5, dx: 0, dy: 0
+    speed: 2.2, // CHANGED: Was 1.5, now faster
+    dx: 0, dy: 0
 };
 
 const robot = {
     img: robotImg,
     x: TILE_SIZE * 18, y: TILE_SIZE * 13,
     width: TILE_SIZE, height: TILE_SIZE,
-    speed: 1, dx: 0, dy: 0
+    speed: 1.8, // CHANGED: Was 1, now faster
+    dx: 0, dy: 0
 };
 
 const enemies = [cat, robot];
@@ -62,9 +64,9 @@ const levelMap = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
 
-// --- 4. DRAWING FUNCTIONS ---
+// --- 4. DRAWING FUNCTIONS (Unchanged) ---
 function drawPlayer() { ctx.drawImage(dragonImg, player.x, player.y, player.width, player.height); }
-function drawMap() { /* ... same as before ... */
+function drawMap() {
     for(let r=0; r<MAP_NUM_ROWS; r++) for(let c=0; c<MAP_NUM_COLS; c++) if(levelMap[r][c]===1){ ctx.fillStyle='#222'; ctx.fillRect(c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE);}
 }
 function drawEnemies() {
@@ -73,7 +75,7 @@ function drawEnemies() {
     });
 }
 
-// --- 5. GAME LOGIC ---
+// --- 5. GAME LOGIC (Unchanged) ---
 function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
 function movePlayer() {
@@ -82,10 +84,8 @@ function movePlayer() {
     handleWallCollisions(player);
 }
 
-// Simple AI to move enemies towards the player
 function moveEnemies() {
     enemies.forEach(enemy => {
-        // Simple "follow" logic
         if (player.x > enemy.x) enemy.dx = enemy.speed;
         else if (player.x < enemy.x) enemy.dx = -enemy.speed;
         else enemy.dx = 0;
@@ -100,16 +100,13 @@ function moveEnemies() {
     });
 }
 
-// Generic wall collision for any character (player or enemy)
 function handleWallCollisions(character) {
-    // Check collision with all wall tiles
     for (let r = 0; r < MAP_NUM_ROWS; r++) {
         for (let c = 0; c < MAP_NUM_COLS; c++) {
             if (levelMap[r][c] === 1) {
                 const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
                 if (character.x < wall.x + wall.width && character.x + character.width > wall.x &&
                     character.y < wall.y + wall.height && character.y + character.height > wall.y) {
-                    // On collision, move character back
                     character.x -= character.dx;
                     character.y -= character.dy;
                 }
@@ -118,7 +115,6 @@ function handleWallCollisions(character) {
     }
 }
 
-// Check for collisions between player and enemies
 function checkPlayerEnemyCollision() {
     enemies.forEach(enemy => {
         if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x &&
@@ -132,8 +128,7 @@ function showGameOver() {
     gameOverScreen.classList.add('visible');
 }
 
-// --- 6. INPUT HANDLERS ---
-// Keyboard, Touch, and Mouse controls are the same as before
+// --- 6. INPUT HANDLERS (Unchanged) ---
 document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight' || e.key === 'd') player.dx = player.speed;
     else if (e.key === 'ArrowLeft' || e.key === 'a') player.dx = -player.speed;
@@ -157,35 +152,33 @@ addTouchAndMouseListeners(downBtn,  () => player.dy = player.speed,  () => playe
 addTouchAndMouseListeners(leftBtn,  () => player.dx = -player.speed, () => player.dx = 0);
 addTouchAndMouseListeners(rightBtn, () => player.dx = player.speed,  () => player.dx = 0);
 
-// Restart button listener
 restartBtn.addEventListener('click', () => {
-    location.reload(); // The simplest way to restart the game
+    location.reload();
 });
 
-// --- 7. THE GAME LOOP ---
+// --- 7. THE GAME LOOP (Unchanged) ---
 function update() {
     if (isGameOver) {
         showGameOver();
-        return; // Stop the game loop
+        return;
     }
 
     clearCanvas();
     drawMap();
     movePlayer();
-    moveEnemies(); // Move the new enemies
+    moveEnemies();
     drawPlayer();
-    drawEnemies(); // Draw the new enemies
-    checkPlayerEnemyCollision(); // Check if player is caught
+    drawEnemies();
+    checkPlayerEnemyCollision();
 
     requestAnimationFrame(update);
 }
 
-// --- 8. START THE GAME ---
-// Use Promise.all to wait for ALL images to load before starting
+// --- 8. START THE GAME (Unchanged) ---
 Promise.all([
     new Promise(resolve => dragonImg.onload = resolve),
     new Promise(resolve => catImg.onload = resolve),
     new Promise(resolve => robotImg.onload = resolve)
 ]).then(() => {
-    update(); // Start the game loop
+    update();
 });

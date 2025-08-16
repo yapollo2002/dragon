@@ -23,16 +23,13 @@ const player = {
     width: TILE_SIZE, height: TILE_SIZE,
     speed: 4, dx: 0, dy: 0, isMoving: false
 };
-// We bring back the decision interval logic for the "smarter" AI
 const cat = {
     img: catImg, x: TILE_SIZE * 18, y: TILE_SIZE * 1,
-    width: TILE_SIZE, height: TILE_SIZE, speed: 4.4, dx: 0, dy: 0,
-    decisionInterval: 75, lastDecisionTime: 0
+    width: TILE_SIZE, height: TILE_SIZE, speed: 4.4, dx: 0, dy: 0
 };
 const robot = {
     img: robotImg, x: TILE_SIZE * 18, y: TILE_SIZE * 13,
-    width: TILE_SIZE, height: TILE_SIZE, speed: 3.6, dx: 0, dy: 0,
-    decisionInterval: 125, lastDecisionTime: 0
+    width: TILE_SIZE, height: TILE_SIZE, speed: 3.6, dx: 0, dy: 0
 };
 const allCharacters = [player, cat, robot];
 const enemies = [cat, robot];
@@ -65,62 +62,39 @@ function drawEnemies() { enemies.forEach(enemy => { ctx.drawImage(enemy.img, ene
 function playSound(sound) { sound.currentTime = 0; sound.play().catch(error => { console.log("Sound playback was prevented.", error); }); }
 function checkPlayerEnemyCollision() { enemies.forEach(enemy => { if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x && player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) { if (!isGameOver) { playSound(gameOverSound); isGameOver = true; } } }); }
 
-// This is the AI "Brain" from the version you liked.
-function updateEnemyIntentions(currentTime) {
+// The "Brain": This function determines the enemy's ideal direction every frame.
+function updateEnemyIntentions() {
     enemies.forEach(enemy => {
-        // Only make a new decision if the timer is up
-        if (currentTime - enemy.lastDecisionTime > enemy.decisionInterval) {
-            enemy.lastDecisionTime = currentTime;
+        const vecX = player.x - enemy.x;
+        const vecY = player.y - enemy.y;
+        const distance = Math.sqrt(vecX * vecX + vecY * vecY);
 
-            const xDist = player.x - enemy.x;
-            const yDist = player.y - enemy.y;
-
-            if (Math.abs(xDist) > Math.abs(yDist)) {
-                enemy.dx = Math.sign(xDist) * enemy.speed;
-                enemy.dy = 0;
-            } else {
-                enemy.dy = Math.sign(yDist) * enemy.speed;
-                enemy.dx = 0;
-            }
-
-            // If the chosen path is blocked, immediately try the other direction
-            if (willCollide(enemy, enemy.dx, enemy.dy)) {
-                if (enemy.dx !== 0) { // Was trying horizontal
-                    enemy.dx = 0;
-                    enemy.dy = Math.sign(yDist) * enemy.speed;
-                } else { // Was trying vertical
-                    enemy.dy = 0;
-                    enemy.dx = Math.sign(xDist) * enemy.speed;
-                }
-            }
+        if (distance < 5) { // Stop if very close
+            enemy.dx = 0;
+            enemy.dy = 0;
+            return;
         }
+
+        // Normalize the vector to get a pure direction
+        const normalizedX = vecX / distance;
+        const normalizedY = vecY / distance;
+
+        // Apply speed to the direction
+        enemy.dx = normalizedX * enemy.speed;
+        enemy.dy = normalizedY * enemy.speed;
     });
 }
 
-// This helper function checks a characters FUTURE position.
-function willCollide(character, dx, dy) {
-    const nextX = character.x + dx;
-    const nextY = character.y + dy;
-    for (let r = 0; r < MAP_NUM_ROWS; r++) {
-        for (let c = 0; c < MAP_NUM_COLS; c++) {
-            if (levelMap[r][c] === 1) {
-                const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
-                if (nextX < wall.x + wall.width && nextX + character.width > wall.x &&
-                    nextY < wall.y + wall.height && nextY + character.height > wall.y) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-// This is the perfect "Body" (collision system) that allows sliding.
+// The "Body": This function moves all characters and handles collisions perfectly.
 function updatePositions() {
     allCharacters.forEach(char => {
-        if (char.dx === 0 && char.dy === 0) return;
+        // No need to check if dx/dy is 0, this handles all cases.
 
-        // Move on X axis
+        // Store current position before moving
+        const originalX = char.x;
+        const originalY = char.y;
+
+        // --- Move on X axis ---
         char.x += char.dx;
         // Check for X collision
         for (let r = 0; r < MAP_NUM_ROWS; r++) {
@@ -129,14 +103,14 @@ function updatePositions() {
                     const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
                     if (char.x < wall.x + wall.width && char.x + char.width > wall.x &&
                         char.y < wall.y + wall.height && char.y + char.height > wall.y) {
-                        char.x -= char.dx; // Revert X move
+                        char.x = originalX; // Revert X position
                         break;
                     }
                 }
             }
         }
 
-        // Move on Y axis
+        // --- Move on Y axis ---
         char.y += char.dy;
         // Check for Y collision
          for (let r = 0; r < MAP_NUM_ROWS; r++) {
@@ -145,7 +119,7 @@ function updatePositions() {
                     const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
                      if (char.x < wall.x + wall.width && char.x + char.width > wall.x &&
                         char.y < wall.y + wall.height && char.y + char.height > wall.y) {
-                        char.y -= char.dy; // Revert Y move
+                        char.y = originalY; // Revert Y position
                         break;
                     }
                 }
@@ -169,12 +143,12 @@ addTouchAndMouseListeners(rightBtn, () => player.dx = player.speed,  () => playe
 restartBtn.addEventListener('click', () => { location.reload(); });
 
 // --- 7. THE GAME LOOP ---
-function update(currentTime = 0) {
+function update() {
     if (isGameOver) {
         showGameOver();
         return;
     }
-    updateEnemyIntentions(currentTime);
+    updateEnemyIntentions();
     updatePositions();
     checkPlayerEnemyCollision();
     draw();

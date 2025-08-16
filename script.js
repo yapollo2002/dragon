@@ -1,4 +1,4 @@
-// --- 1. BASIC SETUP (Unchanged) ---
+// --- 1. BASIC SETUP ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const gameOverScreen = document.getElementById('game-over-screen');
@@ -9,38 +9,117 @@ const robotImg = document.getElementById('robot-sprite');
 const moveSound = document.getElementById('move-sound');
 const gameOverSound = document.getElementById('game-over-sound');
 
-// --- 2. GAME CONFIGURATION (Unchanged) ---
+// --- 2. GAME CONFIGURATION ---
 const TILE_SIZE = 40;
 const MAP_NUM_ROWS = 15;
 const MAP_NUM_COLS = 20;
 canvas.width = MAP_NUM_COLS * TILE_SIZE;
 canvas.height = MAP_NUM_ROWS * TILE_SIZE;
 
-// --- 3. GAME STATE (Unchanged) ---
+// --- 3. GAME STATE ---
 let isGameOver = false;
-const player = { x: TILE_SIZE * 1, y: TILE_SIZE * 7, width: TILE_SIZE, height: TILE_SIZE, speed: 4, dx: 0, dy: 0, isMoving: false };
-const cat = { img: catImg, x: TILE_SIZE * 18, y: TILE_SIZE * 1, width: TILE_SIZE, height: TILE_SIZE, speed: 4.4, dx: 0, dy: 0, decisionInterval: 200, lastDecisionTime: 0 };
-const robot = { img: robotImg, x: TILE_SIZE * 18, y: TILE_SIZE * 13, width: TILE_SIZE, height: TILE_SIZE, speed: 3.6, dx: 0, dy: 0, decisionInterval: 350, lastDecisionTime: 0 };
+const player = {
+    x: TILE_SIZE * 1, y: TILE_SIZE * 7,
+    width: TILE_SIZE, height: TILE_SIZE,
+    speed: 4, dx: 0, dy: 0, isMoving: false
+};
+const cat = {
+    img: catImg, x: TILE_SIZE * 18, y: TILE_SIZE * 1,
+    width: TILE_SIZE, height: TILE_SIZE, speed: 4.4, dx: 0, dy: 0
+};
+const robot = {
+    img: robotImg, x: TILE_SIZE * 18, y: TILE_SIZE * 13,
+    width: TILE_SIZE, height: TILE_SIZE, speed: 3.6, dx: 0, dy: 0
+};
+const allCharacters = [player, cat, robot];
 const enemies = [cat, robot];
 const levelMap = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], [1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1], [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1], [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], [1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1], [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1], [1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1], [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1], [1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1],
+    [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1],
+    [1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1],
+    [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+    [1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
 
-// --- 4. DRAWING FUNCTIONS (Unchanged) ---
+// --- 4. DRAWING FUNCTIONS ---
+function draw() {
+    clearCanvas();
+    drawMap();
+    drawEnemies();
+    drawPlayer();
+}
+function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 function drawPlayer() { ctx.drawImage(dragonImg, player.x, player.y, player.width, player.height); }
-function drawMap() { for (let r=0; r<MAP_NUM_ROWS; r++) for (let c=0; c<MAP_NUM_COLS; c++) if(levelMap[r][c] === 1){ ctx.fillStyle = '#228B22'; ctx.fillRect(c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE); }}
+function drawMap() { for (let r = 0; r < MAP_NUM_ROWS; r++) { for (let c = 0; c < MAP_NUM_COLS; c++) { if (levelMap[r][c] === 1) { ctx.fillStyle = '#228B22'; ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE); } } } }
 function drawEnemies() { enemies.forEach(enemy => { ctx.drawImage(enemy.img, enemy.x, enemy.y, enemy.width, enemy.height); }); }
 
-// --- 5. GAME LOGIC (Unchanged) ---
+// --- 5. GAME LOGIC (COMPLETELY REWRITTEN) ---
 function playSound(sound) { sound.currentTime = 0; sound.play().catch(error => { console.log("Sound playback was prevented.", error); }); }
 function checkPlayerEnemyCollision() { enemies.forEach(enemy => { if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x && player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) { if (!isGameOver) { playSound(gameOverSound); isGameOver = true; } } }); }
-function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
-function movePlayer() { player.x += player.dx; player.y += player.dy; handleWallCollisions(player); }
-function moveEnemies(currentTime) { enemies.forEach(enemy => { if (currentTime - enemy.lastDecisionTime > enemy.decisionInterval) { enemy.lastDecisionTime = currentTime; const xDist=player.x-enemy.x; const yDist=player.y-enemy.y; if (Math.abs(xDist)>Math.abs(yDist)) { enemy.dx=Math.sign(xDist)*enemy.speed; enemy.dy=0; } else { enemy.dy=Math.sign(yDist)*enemy.speed; enemy.dx=0; } } enemy.x+=enemy.dx; enemy.y+=enemy.dy; handleWallCollisions(enemy); }); }
-function handleWallCollisions(character) { const originalDx = character.dx; const originalDy = character.dy; for (let r = 0; r < MAP_NUM_ROWS; r++) { for (let c = 0; c < MAP_NUM_COLS; c++) { if (levelMap[r][c] === 1) { const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE }; if (character.x < wall.x + wall.width && character.x + character.width > wall.x && character.y < wall.y + wall.height && character.y + character.height > wall.y) { character.x -= originalDx; character.y -= originalDy; character.dx = 0; character.dy = 0; return; } } } } }
+
+// AI's only job is to decide the INTENDED direction. It no longer worries about collisions.
+function updateEnemyIntentions() {
+    enemies.forEach(enemy => {
+        const xDist = player.x - enemy.x;
+        const yDist = player.y - enemy.y;
+
+        enemy.dx = Math.sign(xDist) * enemy.speed;
+        enemy.dy = Math.sign(yDist) * enemy.speed;
+    });
+}
+
+// This new function handles all movement and collision checks correctly.
+function updatePositions() {
+    allCharacters.forEach(char => {
+        if (char.dx === 0 && char.dy === 0) return;
+
+        // Move on X axis
+        char.x += char.dx;
+        // Check for X collision
+        for (let r = 0; r < MAP_NUM_ROWS; r++) {
+            for (let c = 0; c < MAP_NUM_COLS; c++) {
+                if (levelMap[r][c] === 1) {
+                    const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
+                    if (char.x < wall.x + wall.width && char.x + char.width > wall.x &&
+                        char.y < wall.y + wall.height && char.y + char.height > wall.y) {
+                        char.x -= char.dx; // Revert X move
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Move on Y axis
+        char.y += char.dy;
+        // Check for Y collision
+         for (let r = 0; r < MAP_NUM_ROWS; r++) {
+            for (let c = 0; c < MAP_NUM_COLS; c++) {
+                if (levelMap[r][c] === 1) {
+                    const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
+                     if (char.x < wall.x + wall.width && char.x + char.width > wall.x &&
+                        char.y < wall.y + wall.height && char.y + char.height > wall.y) {
+                        char.y -= char.dy; // Revert Y move
+                        break;
+                    }
+                }
+            }
+        }
+    });
+}
+
 function showGameOver() { gameOverScreen.classList.add('visible'); }
 
-// --- 6. INPUT HANDLERS (Unchanged) ---
+// --- 6. INPUT HANDLERS ---
 function startMovement() { if (!player.isMoving && (player.dx !== 0 || player.dy !== 0)) { playSound(moveSound); player.isMoving = true; } }
 document.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'd') player.dx = player.speed; else if (e.key === 'ArrowLeft' || e.key === 'a') player.dx = -player.speed; else if (e.key === 'ArrowUp' || e.key === 'w') player.dy = -player.speed; else if (e.key === 'ArrowDown' || e.key === 's') player.dy = player.speed; startMovement(); });
 document.addEventListener('keyup', (e) => { if (['ArrowRight', 'd', 'ArrowLeft', 'a'].includes(e.key)) player.dx = 0; if (['ArrowUp', 'w', 'ArrowDown', 's'].includes(e.key)) player.dy = 0; if (player.dx === 0 && player.dy === 0) { player.isMoving = false; } });
@@ -52,48 +131,31 @@ addTouchAndMouseListeners(leftBtn,  () => player.dx = -player.speed, () => playe
 addTouchAndMouseListeners(rightBtn, () => player.dx = player.speed,  () => player.dx = 0);
 restartBtn.addEventListener('click', () => { location.reload(); });
 
-// --- 7. THE GAME LOOP (Unchanged) ---
-function update(currentTime = 0) {
+// --- 7. THE GAME LOOP ---
+function update() {
     if (isGameOver) {
         showGameOver();
         return;
     }
-    clearCanvas();
-    drawMap();
-    movePlayer();
-    moveEnemies(currentTime);
-    drawPlayer();
-    drawEnemies();
+
+    // 1. Update AI intentions
+    updateEnemyIntentions();
+
+    // 2. Move all characters and handle collisions
+    updatePositions();
+
+    // 3. Check for game over condition
     checkPlayerEnemyCollision();
+
+    // 4. Draw everything in its new, final position
+    draw();
+
     requestAnimationFrame(update);
 }
 
-// --- 8. START THE GAME (UPDATED) ---
-
-// This event listener ensures that the entire HTML page is ready before we try to draw on it.
+// --- 8. START THE GAME ---
 window.addEventListener('DOMContentLoaded', () => {
-    // 1. Draw the static map immediately so the screen isn't blank.
     drawMap();
-
-    // 2. Helper function to reliably check if an image is loaded.
-    function loadImage(imgElement) {
-        return new Promise(resolve => {
-            if (imgElement.complete) {
-                resolve();
-            } else {
-                imgElement.onload = resolve;
-                imgElement.onerror = resolve; // Resolve on error too, to avoid getting stuck
-            }
-        });
-    }
-
-    // 3. Wait for all character images to be ready.
-    Promise.all([
-        loadImage(dragonImg),
-        loadImage(catImg),
-        loadImage(robotImg)
-    ]).then(() => {
-        // 4. Once images are loaded, start the main animation loop.
-        update();
-    });
+    function loadImage(imgElement) { return new Promise(resolve => { if (imgElement.complete) { resolve(); } else { imgElement.onload = resolve; imgElement.onerror = resolve; } }); }
+    Promise.all([ loadImage(dragonImg), loadImage(catImg), loadImage(robotImg) ]).then(() => { update(); });
 });

@@ -23,13 +23,16 @@ const player = {
     width: TILE_SIZE, height: TILE_SIZE,
     speed: 4, dx: 0, dy: 0, isMoving: false
 };
+// We are bringing back the "thinking" timer (decisionInterval) for the AI you liked
 const cat = {
     img: catImg, x: TILE_SIZE * 18, y: TILE_SIZE * 1,
-    width: TILE_SIZE, height: TILE_SIZE, speed: 4.4, dx: 0, dy: 0
+    width: TILE_SIZE, height: TILE_SIZE, speed: 4.4, dx: 0, dy: 0,
+    decisionInterval: 100, lastDecisionTime: 0 // Thinks every 100ms
 };
 const robot = {
     img: robotImg, x: TILE_SIZE * 18, y: TILE_SIZE * 13,
-    width: TILE_SIZE, height: TILE_SIZE, speed: 3.6, dx: 0, dy: 0
+    width: TILE_SIZE, height: TILE_SIZE, speed: 3.6, dx: 0, dy: 0,
+    decisionInterval: 150, lastDecisionTime: 0 // Thinks every 150ms
 };
 const allCharacters = [player, cat, robot];
 const enemies = [cat, robot];
@@ -62,48 +65,44 @@ function drawEnemies() { enemies.forEach(enemy => { ctx.drawImage(enemy.img, ene
 function playSound(sound) { sound.currentTime = 0; sound.play().catch(error => { console.log("Sound playback was prevented.", error); }); }
 function checkPlayerEnemyCollision() { enemies.forEach(enemy => { if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x && player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) { if (!isGameOver) { playSound(gameOverSound); isGameOver = true; } } }); }
 
-// The "Brain": This function determines the enemy's ideal direction every frame.
-function updateEnemyIntentions() {
+// The "Brain": The decision-making AI you liked.
+function updateEnemyIntentions(currentTime) {
     enemies.forEach(enemy => {
-        const vecX = player.x - enemy.x;
-        const vecY = player.y - enemy.y;
-        const distance = Math.sqrt(vecX * vecX + vecY * vecY);
+        if (currentTime - enemy.lastDecisionTime > enemy.decisionInterval) {
+            enemy.lastDecisionTime = currentTime;
 
-        if (distance < 5) { // Stop if very close
-            enemy.dx = 0;
-            enemy.dy = 0;
-            return;
+            const xDist = player.x - enemy.x;
+            const yDist = player.y - enemy.y;
+
+            // This simple logic gives the jerky, more "alive" feel
+            if (Math.abs(xDist) > Math.abs(yDist)) {
+                enemy.dx = Math.sign(xDist) * enemy.speed;
+                enemy.dy = 0;
+            } else {
+                enemy.dy = Math.sign(yDist) * enemy.speed;
+                enemy.dx = 0;
+            }
         }
-
-        // Normalize the vector to get a pure direction
-        const normalizedX = vecX / distance;
-        const normalizedY = vecY / distance;
-
-        // Apply speed to the direction
-        enemy.dx = normalizedX * enemy.speed;
-        enemy.dy = normalizedY * enemy.speed;
     });
 }
 
-// The "Body": This function moves all characters and handles collisions perfectly.
+// The "Body": The robust collision system that allows sliding and prevents freezes.
 function updatePositions() {
     allCharacters.forEach(char => {
-        // No need to check if dx/dy is 0, this handles all cases.
-
-        // Store current position before moving
-        const originalX = char.x;
-        const originalY = char.y;
+        if (char.dx === 0 && char.dy === 0) return;
 
         // --- Move on X axis ---
         char.x += char.dx;
-        // Check for X collision
         for (let r = 0; r < MAP_NUM_ROWS; r++) {
             for (let c = 0; c < MAP_NUM_COLS; c++) {
                 if (levelMap[r][c] === 1) {
                     const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
                     if (char.x < wall.x + wall.width && char.x + char.width > wall.x &&
                         char.y < wall.y + wall.height && char.y + char.height > wall.y) {
-                        char.x = originalX; // Revert X position
+                        // If moving right, snap to the wall's left edge
+                        if (char.dx > 0) char.x = wall.x - char.width;
+                        // If moving left, snap to the wall's right edge
+                        else if (char.dx < 0) char.x = wall.x + wall.width;
                         break;
                     }
                 }
@@ -112,14 +111,16 @@ function updatePositions() {
 
         // --- Move on Y axis ---
         char.y += char.dy;
-        // Check for Y collision
-         for (let r = 0; r < MAP_NUM_ROWS; r++) {
+        for (let r = 0; r < MAP_NUM_ROWS; r++) {
             for (let c = 0; c < MAP_NUM_COLS; c++) {
                 if (levelMap[r][c] === 1) {
                     const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
                      if (char.x < wall.x + wall.width && char.x + char.width > wall.x &&
                         char.y < wall.y + wall.height && char.y + char.height > wall.y) {
-                        char.y = originalY; // Revert Y position
+                        // If moving down, snap to the wall's top edge
+                        if (char.dy > 0) char.y = wall.y - char.height;
+                        // If moving up, snap to the wall's bottom edge
+                        else if (char.dy < 0) char.y = wall.y + wall.height;
                         break;
                     }
                 }
@@ -143,12 +144,12 @@ addTouchAndMouseListeners(rightBtn, () => player.dx = player.speed,  () => playe
 restartBtn.addEventListener('click', () => { location.reload(); });
 
 // --- 7. THE GAME LOOP ---
-function update() {
+function update(currentTime = 0) {
     if (isGameOver) {
         showGameOver();
         return;
     }
-    updateEnemyIntentions();
+    updateEnemyIntentions(currentTime);
     updatePositions();
     checkPlayerEnemyCollision();
     draw();
@@ -160,4 +161,4 @@ window.addEventListener('DOMContentLoaded', () => {
     drawMap();
     function loadImage(imgElement) { return new Promise(resolve => { if (imgElement.complete) { resolve(); } else { imgElement.onload = resolve; imgElement.onerror = resolve; } }); }
     Promise.all([ loadImage(dragonImg), loadImage(catImg), loadImage(robotImg) ]).then(() => { update(); });
-});```
+});

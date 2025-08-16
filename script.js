@@ -31,6 +31,7 @@ const robot = {
     img: robotImg, x: TILE_SIZE * 18, y: TILE_SIZE * 13,
     width: TILE_SIZE, height: TILE_SIZE, speed: 3.6, dx: 0, dy: 0
 };
+// A single list of all characters makes the movement/collision logic simpler
 const allCharacters = [player, cat, robot];
 const enemies = [cat, robot];
 const levelMap = [
@@ -63,52 +64,68 @@ function drawPlayer() { ctx.drawImage(dragonImg, player.x, player.y, player.widt
 function drawMap() { for (let r = 0; r < MAP_NUM_ROWS; r++) { for (let c = 0; c < MAP_NUM_COLS; c++) { if (levelMap[r][c] === 1) { ctx.fillStyle = '#228B22'; ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE); } } } }
 function drawEnemies() { enemies.forEach(enemy => { ctx.drawImage(enemy.img, enemy.x, enemy.y, enemy.width, enemy.height); }); }
 
-// --- 5. GAME LOGIC (COMPLETELY REWRITTEN) ---
+// --- 5. GAME LOGIC (FINAL VERSION) ---
 function playSound(sound) { sound.currentTime = 0; sound.play().catch(error => { console.log("Sound playback was prevented.", error); }); }
 function checkPlayerEnemyCollision() { enemies.forEach(enemy => { if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x && player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) { if (!isGameOver) { playSound(gameOverSound); isGameOver = true; } } }); }
 
-// AI's only job is to decide the INTENDED direction. It no longer worries about collisions.
+// *** NEW VECTOR NORMALIZATION AI ***
 function updateEnemyIntentions() {
     enemies.forEach(enemy => {
-        const xDist = player.x - enemy.x;
-        const yDist = player.y - enemy.y;
+        // 1. Calculate the vector from the enemy to the player.
+        const vecX = player.x - enemy.x;
+        const vecY = player.y - enemy.y;
 
-        enemy.dx = Math.sign(xDist) * enemy.speed;
-        enemy.dy = Math.sign(yDist) * enemy.speed;
+        // 2. Calculate the distance (magnitude of the vector).
+        const distance = Math.sqrt(vecX * vecX + vecY * vecY);
+
+        // Stop if the enemy is very close to the player.
+        if (distance < TILE_SIZE / 2) {
+            enemy.dx = 0;
+            enemy.dy = 0;
+            return;
+        }
+
+        // 3. Normalize the vector (divide by the distance to get a unit vector of length 1).
+        const normalizedX = vecX / distance;
+        const normalizedY = vecY / distance;
+
+        // 4. Set the enemy's intended movement by multiplying the direction by its speed.
+        // This ensures the enemy is always trying to move, even if slightly, on both axes,
+        // which allows the collision system to make it slide along walls.
+        enemy.dx = normalizedX * enemy.speed;
+        enemy.dy = normalizedY * enemy.speed;
     });
 }
 
-// This new function handles all movement and collision checks correctly.
+// *** NEW ROBUST COLLISION AND MOVEMENT LOGIC ***
 function updatePositions() {
     allCharacters.forEach(char => {
         if (char.dx === 0 && char.dy === 0) return;
 
-        // Move on X axis
+        // Move on X axis and check for collisions
         char.x += char.dx;
-        // Check for X collision
         for (let r = 0; r < MAP_NUM_ROWS; r++) {
             for (let c = 0; c < MAP_NUM_COLS; c++) {
                 if (levelMap[r][c] === 1) {
                     const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
                     if (char.x < wall.x + wall.width && char.x + char.width > wall.x &&
                         char.y < wall.y + wall.height && char.y + char.height > wall.y) {
-                        char.x -= char.dx; // Revert X move
+                        char.x -= char.dx; // Revert only the X move
                         break;
                     }
                 }
             }
         }
 
-        // Move on Y axis
+        // Move on Y axis and check for collisions
         char.y += char.dy;
-        // Check for Y collision
-         for (let r = 0; r < MAP_NUM_ROWS; r++) {
+        for (let r = 0; r < MAP_NUM_ROWS; r++) {
             for (let c = 0; c < MAP_NUM_COLS; c++) {
                 if (levelMap[r][c] === 1) {
                     const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
-                     if (char.x < wall.x + wall.width && char.x + char.width > wall.x &&
+                    if (char.x < wall.x + wall.width && char.x + char.width > wall.x &&
                         char.y < wall.y + wall.height && char.y + char.height > wall.y) {
-                        char.y -= char.dy; // Revert Y move
+                        char.y -= char.dy; // Revert only the Y move
                         break;
                     }
                 }
@@ -137,19 +154,10 @@ function update() {
         showGameOver();
         return;
     }
-
-    // 1. Update AI intentions
     updateEnemyIntentions();
-
-    // 2. Move all characters and handle collisions
     updatePositions();
-
-    // 3. Check for game over condition
     checkPlayerEnemyCollision();
-
-    // 4. Draw everything in its new, final position
     draw();
-
     requestAnimationFrame(update);
 }
 

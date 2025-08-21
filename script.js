@@ -23,16 +23,15 @@ const player = {
     width: TILE_SIZE, height: TILE_SIZE,
     speed: 4, dx: 0, dy: 0, isMoving: false
 };
-// We are bringing back the "thinking" timer (decisionInterval) for the AI you liked
 const cat = {
     img: catImg, x: TILE_SIZE * 18, y: TILE_SIZE * 1,
     width: TILE_SIZE, height: TILE_SIZE, speed: 4.4, dx: 0, dy: 0,
-    decisionInterval: 100, lastDecisionTime: 0 // Thinks every 100ms
+    decisionInterval: 100, lastDecisionTime: 0
 };
 const robot = {
     img: robotImg, x: TILE_SIZE * 18, y: TILE_SIZE * 13,
     width: TILE_SIZE, height: TILE_SIZE, speed: 3.6, dx: 0, dy: 0,
-    decisionInterval: 150, lastDecisionTime: 0 // Thinks every 150ms
+    decisionInterval: 150, lastDecisionTime: 0
 };
 const allCharacters = [player, cat, robot];
 const enemies = [cat, robot];
@@ -65,43 +64,85 @@ function drawEnemies() { enemies.forEach(enemy => { ctx.drawImage(enemy.img, ene
 function playSound(sound) { sound.currentTime = 0; sound.play().catch(error => { console.log("Sound playback was prevented.", error); }); }
 function checkPlayerEnemyCollision() { enemies.forEach(enemy => { if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x && player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) { if (!isGameOver) { playSound(gameOverSound); isGameOver = true; } } }); }
 
-// The "Brain": The decision-making AI you liked.
+// The "Brain": This AI makes a new decision on a timer or if it gets stopped.
 function updateEnemyIntentions(currentTime) {
     enemies.forEach(enemy => {
-        if (currentTime - enemy.lastDecisionTime > enemy.decisionInterval) {
+        const isStopped = enemy.dx === 0 && enemy.dy === 0;
+        if (isStopped || currentTime - enemy.lastDecisionTime > enemy.decisionInterval) {
             enemy.lastDecisionTime = currentTime;
 
             const xDist = player.x - enemy.x;
             const yDist = player.y - enemy.y;
 
-            // This simple logic gives the jerky, more "alive" feel
+            let primaryMove = {}, secondaryMove = {};
+
+            // Determine primary and secondary moves based on distance
             if (Math.abs(xDist) > Math.abs(yDist)) {
-                enemy.dx = Math.sign(xDist) * enemy.speed;
-                enemy.dy = 0;
+                primaryMove = { dx: Math.sign(xDist) * enemy.speed, dy: 0 };
+                secondaryMove = { dx: 0, dy: Math.sign(yDist) * enemy.speed };
             } else {
-                enemy.dy = Math.sign(yDist) * enemy.speed;
-                enemy.dx = 0;
+                primaryMove = { dx: 0, dy: Math.sign(yDist) * enemy.speed };
+                secondaryMove = { dx: Math.sign(xDist) * enemy.speed, dy: 0 };
+            }
+
+            // Rule #1 & #2: Try primary, then secondary move
+            if (!willCollide(enemy, primaryMove.dx, primaryMove.dy)) {
+                enemy.dx = primaryMove.dx;
+                enemy.dy = primaryMove.dy;
+            } else if (!willCollide(enemy, secondaryMove.dx, secondaryMove.dy)) {
+                enemy.dx = secondaryMove.dx;
+                enemy.dy = secondaryMove.dy;
+            } else {
+                // Rule #3: The Unstuck Maneuver! Find any valid move.
+                const possibleMoves = [
+                    { dx: enemy.speed, dy: 0 }, { dx: -enemy.speed, dy: 0 },
+                    { dx: 0, dy: enemy.speed }, { dx: 0, dy: -enemy.speed }
+                ].filter(move => !willCollide(enemy, move.dx, move.dy));
+
+                if (possibleMoves.length > 0) {
+                    const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                    enemy.dx = randomMove.dx;
+                    enemy.dy = randomMove.dy;
+                }
             }
         }
     });
 }
 
-// The "Body": The robust collision system that allows sliding and prevents freezes.
+// Helper function for the "Brain" to look one step ahead.
+function willCollide(character, dx, dy) {
+    const nextX = character.x + dx;
+    const nextY = character.y + dy;
+    for (let r = 0; r < MAP_NUM_ROWS; r++) {
+        for (let c = 0; c < MAP_NUM_COLS; c++) {
+            if (levelMap[r][c] === 1) {
+                const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
+                if (nextX < wall.x + wall.width && nextX + character.width > wall.x &&
+                    nextY < wall.y + wall.height && nextY + character.height > wall.y) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+// The "Body": This function moves characters and makes them slide along walls.
 function updatePositions() {
     allCharacters.forEach(char => {
+        // We only move if there is an intention to move
         if (char.dx === 0 && char.dy === 0) return;
 
-        // --- Move on X axis ---
+        // Move on X axis
         char.x += char.dx;
+        // Check for X collision
         for (let r = 0; r < MAP_NUM_ROWS; r++) {
             for (let c = 0; c < MAP_NUM_COLS; c++) {
                 if (levelMap[r][c] === 1) {
                     const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
                     if (char.x < wall.x + wall.width && char.x + char.width > wall.x &&
                         char.y < wall.y + wall.height && char.y + char.height > wall.y) {
-                        // If moving right, snap to the wall's left edge
                         if (char.dx > 0) char.x = wall.x - char.width;
-                        // If moving left, snap to the wall's right edge
                         else if (char.dx < 0) char.x = wall.x + wall.width;
                         break;
                     }
@@ -109,17 +150,16 @@ function updatePositions() {
             }
         }
 
-        // --- Move on Y axis ---
+        // Move on Y axis
         char.y += char.dy;
-        for (let r = 0; r < MAP_NUM_ROWS; r++) {
+        // Check for Y collision
+         for (let r = 0; r < MAP_NUM_ROWS; r++) {
             for (let c = 0; c < MAP_NUM_COLS; c++) {
                 if (levelMap[r][c] === 1) {
                     const wall = { x: c * TILE_SIZE, y: r * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE };
                      if (char.x < wall.x + wall.width && char.x + char.width > wall.x &&
                         char.y < wall.y + wall.height && char.y + char.height > wall.y) {
-                        // If moving down, snap to the wall's top edge
                         if (char.dy > 0) char.y = wall.y - char.height;
-                        // If moving up, snap to the wall's bottom edge
                         else if (char.dy < 0) char.y = wall.y + wall.height;
                         break;
                     }

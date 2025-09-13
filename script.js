@@ -33,7 +33,6 @@ const robot = {
     width: TILE_SIZE, height: TILE_SIZE, speed: 3.6, dx: 0, dy: 0,
     path: [], pathRecalculationInterval: 500, lastPathRecalculationTime: 0
 };
-const allCharacters = [player, cat, robot];
 const enemies = [cat, robot];
 const levelMap = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -53,33 +52,17 @@ const levelMap = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
 
-// --- 4. DRAWING FUNCTIONS (UPDATED) ---
+// --- 4. DRAWING FUNCTIONS ---
 function draw() {
     clearCanvas();
     drawMap();
-    drawPaths();
     drawEnemies();
     drawPlayer();
-    drawEnemyCoordinates(); // <<<<<< NEW: Draw coordinates on top of everything
 }
 function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 function drawPlayer() { ctx.drawImage(dragonImg, player.x, player.y, player.width, player.height); }
 function drawMap() { for (let r = 0; r < MAP_NUM_ROWS; r++) { for (let c = 0; c < MAP_NUM_COLS; c++) { if (levelMap[r][c] === 1) { ctx.fillStyle = '#228B22'; ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE); } } } }
 function drawEnemies() { enemies.forEach(enemy => { ctx.drawImage(enemy.img, enemy.x, enemy.y, enemy.width, enemy.height); }); }
-function drawPaths() { enemies.forEach(enemy => { ctx.fillStyle = (enemy === cat) ? 'rgba(255, 165, 0, 0.5)' : 'rgba(135, 206, 250, 0.5)'; enemy.path.forEach(step => { const centerX = step.x * TILE_SIZE + TILE_SIZE / 2; const centerY = step.y * TILE_SIZE + TILE_SIZE / 2; ctx.beginPath(); ctx.arc(centerX, centerY, TILE_SIZE / 4, 0, 2 * Math.PI); ctx.fill(); }); }); }
-
-// NEW: This function draws the coordinates on the screen for debugging
-function drawEnemyCoordinates() {
-    ctx.font = '12px Arial';
-    ctx.fillStyle = 'white';
-    ctx.textAlign = 'center';
-    enemies.forEach(enemy => {
-        const coordText = `X:${Math.round(enemy.x)}, Y:${Math.round(enemy.y)}`;
-        // Draw the text above the center of the enemy
-        ctx.fillText(coordText, enemy.x + enemy.width / 2, enemy.y - 5);
-    });
-}
-
 
 // --- 5. A* PATHFINDING ALGORITHM ---
 function astar(grid, start, end) {
@@ -110,7 +93,6 @@ function astar(grid, start, end) {
     return [];
 }
 
-
 // --- 6. GAME LOGIC ---
 function playSound(sound) { sound.currentTime = 0; sound.play().catch(error => { console.log("Sound playback was prevented.", error); }); }
 function checkPlayerEnemyCollision() { enemies.forEach(enemy => { if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x && player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) { if (!isGameOver) { playSound(gameOverSound); isGameOver = true; } } }); }
@@ -132,7 +114,7 @@ function updateAI(currentTime) {
     });
 }
 
-// The "Body": This is the old, broken version that we are observing.
+// The "Body": Reliably follows the path by snapping to the grid
 function followPath() {
     enemies.forEach(enemy => {
         if (enemy.path.length === 0) {
@@ -142,32 +124,35 @@ function followPath() {
         }
 
         const nextStep = enemy.path[0];
-        const targetX = nextStep.x * TILE_SIZE;
-        const targetY = nextStep.y * TILE_SIZE;
+        const targetX = nextStep.x * TILE_SIZE + (TILE_SIZE - enemy.width) / 2;
+        const targetY = nextStep.y * TILE_SIZE + (TILE_SIZE - enemy.height) / 2;
 
         const vecX = targetX - enemy.x;
         const vecY = targetY - enemy.y;
         const distance = Math.sqrt(vecX * vecX + vecY * vecY);
 
         if (distance < enemy.speed) {
+            enemy.x = targetX;
+            enemy.y = targetY;
             enemy.path.shift();
         } else {
             const normalizedX = vecX / distance;
             const normalizedY = vecY / distance;
             enemy.dx = normalizedX * enemy.speed;
             enemy.dy = normalizedY * enemy.speed;
-
             enemy.x += enemy.dx;
             enemy.y += enemy.dy;
         }
     });
 }
 
-// Player-only collision
+// Player-only movement and collision
 function updatePlayerPosition() {
     if (player.dx === 0 && player.dy === 0) return;
+
     player.x += player.dx;
     for (let r=0;r<MAP_NUM_ROWS;r++) for(let c=0;c<MAP_NUM_COLS;c++) if(levelMap[r][c]===1){const wall={x:c*TILE_SIZE,y:r*TILE_SIZE,width:TILE_SIZE,height:TILE_SIZE};if(player.x<wall.x+wall.width&&player.x+player.width>wall.x&&player.y<wall.y+wall.height&&player.y+player.height>wall.y){if(player.dx>0)player.x=wall.x-player.width;else if(player.dx<0)player.x=wall.x+wall.width;break;}}
+
     player.y += player.dy;
     for (let r=0;r<MAP_NUM_ROWS;r++) for(let c=0;c<MAP_NUM_COLS;c++) if(levelMap[r][c]===1){const wall={x:c*TILE_SIZE,y:r*TILE_SIZE,width:TILE_SIZE,height:TILE_SIZE};if(player.x<wall.x+wall.width&&player.x+player.width>wall.x&&player.y<wall.y+wall.height&&player.y+player.height>wall.y){if(player.dy>0)player.y=wall.y-player.height;else if(player.dy<0)player.y=wall.y+wall.height;break;}}
 }
@@ -196,7 +181,7 @@ function update(currentTime = 0) {
     followPath();
     updatePlayerPosition();
     checkPlayerEnemyCollision();
-    draw(); // This function now also calls drawEnemyCoordinates
+    draw();
     requestAnimationFrame(update);
 }
 

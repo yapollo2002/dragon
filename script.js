@@ -26,16 +26,12 @@ const player = {
 const cat = {
     img: catImg, x: TILE_SIZE * 18, y: TILE_SIZE * 1,
     width: TILE_SIZE, height: TILE_SIZE, speed: 4.4, dx: 0, dy: 0,
-    path: [], // <<<<<< This will store the cat's calculated route
-    pathRecalculationInterval: 500, // Recalculate every 500ms
-    lastPathRecalculationTime: 0
+    path: [], pathRecalculationInterval: 500, lastPathRecalculationTime: 0
 };
 const robot = {
     img: robotImg, x: TILE_SIZE * 18, y: TILE_SIZE * 13,
     width: TILE_SIZE, height: TILE_SIZE, speed: 3.6, dx: 0, dy: 0,
-    path: [], // <<<<<< This will store the robot's calculated route
-    pathRecalculationInterval: 500, // Recalculate every 500ms
-    lastPathRecalculationTime: 0
+    path: [], pathRecalculationInterval: 500, lastPathRecalculationTime: 0
 };
 const allCharacters = [player, cat, robot];
 const enemies = [cat, robot];
@@ -57,35 +53,13 @@ const levelMap = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
 
-// --- 4. DRAWING FUNCTIONS (UPDATED) ---
-function draw() {
-    clearCanvas();
-    drawMap();
-    drawPaths(); // <<<<<< NEW: Draw the visualized path
-    drawEnemies();
-    drawPlayer();
-}
+// --- 4. DRAWING FUNCTIONS ---
+function draw() { clearCanvas(); drawMap(); drawPaths(); drawEnemies(); drawPlayer(); }
 function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 function drawPlayer() { ctx.drawImage(dragonImg, player.x, player.y, player.width, player.height); }
 function drawMap() { for (let r = 0; r < MAP_NUM_ROWS; r++) { for (let c = 0; c < MAP_NUM_COLS; c++) { if (levelMap[r][c] === 1) { ctx.fillStyle = '#228B22'; ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE); } } } }
 function drawEnemies() { enemies.forEach(enemy => { ctx.drawImage(enemy.img, enemy.x, enemy.y, enemy.width, enemy.height); }); }
-
-// NEW: This function draws the path on the screen for debugging
-function drawPaths() {
-    enemies.forEach(enemy => {
-        // Use a different color for each enemy's path
-        ctx.fillStyle = (enemy === cat) ? 'rgba(255, 165, 0, 0.5)' : 'rgba(135, 206, 250, 0.5)';
-
-        enemy.path.forEach(step => {
-            const centerX = step.x * TILE_SIZE + TILE_SIZE / 2;
-            const centerY = step.y * TILE_SIZE + TILE_SIZE / 2;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, TILE_SIZE / 4, 0, 2 * Math.PI);
-            ctx.fill();
-        });
-    });
-}
-
+function drawPaths() { enemies.forEach(enemy => { ctx.fillStyle = (enemy === cat) ? 'rgba(255, 165, 0, 0.5)' : 'rgba(135, 206, 250, 0.5)'; enemy.path.forEach(step => { const centerX = step.x * TILE_SIZE + TILE_SIZE / 2; const centerY = step.y * TILE_SIZE + TILE_SIZE / 2; ctx.beginPath(); ctx.arc(centerX, centerY, TILE_SIZE / 4, 0, 2 * Math.PI); ctx.fill(); }); }); }
 
 // --- 5. A* PATHFINDING ALGORITHM ---
 function astar(grid, start, end) {
@@ -96,58 +70,25 @@ function astar(grid, start, end) {
             nodes[r][c] = { x: c, y: r, g: Infinity, h: 0, f: Infinity, parent: null, isWall: grid[r][c] === 1 };
         }
     }
-
-    const startNode = nodes[start.y][start.x];
-    const endNode = nodes[end.y][end.x];
-    startNode.g = 0;
-    startNode.h = Math.abs(startNode.x - endNode.x) + Math.abs(startNode.y - endNode.y);
-    startNode.f = startNode.g + startNode.h;
-
-    const openSet = [startNode];
-    const closedSet = [];
-
+    const startNode = nodes[start.y][start.x]; const endNode = nodes[end.y][end.x];
+    startNode.g = 0; startNode.h = Math.abs(startNode.x - endNode.x) + Math.abs(startNode.y - endNode.y); startNode.f = startNode.g + startNode.h;
+    const openSet = [startNode]; const closedSet = [];
     while (openSet.length > 0) {
         let lowestIndex = 0;
-        for (let i = 0; i < openSet.length; i++) {
-            if (openSet[i].f < openSet[lowestIndex].f) { lowestIndex = i; }
-        }
+        for (let i = 0; i < openSet.length; i++) { if (openSet[i].f < openSet[lowestIndex].f) { lowestIndex = i; } }
         const currentNode = openSet[lowestIndex];
-
-        if (currentNode === endNode) {
-            const path = [];
-            let temp = currentNode;
-            while (temp.parent) {
-                path.push(temp);
-                temp = temp.parent;
-            }
-            return path.reverse();
-        }
-
-        openSet.splice(lowestIndex, 1);
-        closedSet.push(currentNode);
-
-        const neighbors = [];
-        const { x, y } = currentNode;
-        if (y > 0) neighbors.push(nodes[y - 1][x]);
-        if (y < MAP_NUM_ROWS - 1) neighbors.push(nodes[y + 1][x]);
-        if (x > 0) neighbors.push(nodes[y][x - 1]);
-        if (x < MAP_NUM_COLS - 1) neighbors.push(nodes[y][x + 1]);
-
+        if (currentNode === endNode) { const path = []; let temp = currentNode; while (temp.parent) { path.push(temp); temp = temp.parent; } return path.reverse(); }
+        openSet.splice(lowestIndex, 1); closedSet.push(currentNode);
+        const neighbors = []; const { x, y } = currentNode;
+        if (y > 0) neighbors.push(nodes[y - 1][x]); if (y < MAP_NUM_ROWS - 1) neighbors.push(nodes[y + 1][x]); if (x > 0) neighbors.push(nodes[y][x - 1]); if (x < MAP_NUM_COLS - 1) neighbors.push(nodes[y][x + 1]);
         for (const neighbor of neighbors) {
             if (neighbor.isWall || closedSet.includes(neighbor)) continue;
             const tentativeG = currentNode.g + 1;
-            if (tentativeG < neighbor.g) {
-                neighbor.parent = currentNode;
-                neighbor.g = tentativeG;
-                neighbor.h = Math.abs(neighbor.x - endNode.x) + Math.abs(neighbor.y - endNode.y);
-                neighbor.f = neighbor.g + neighbor.h;
-                if (!openSet.includes(neighbor)) { openSet.push(neighbor); }
-            }
+            if (tentativeG < neighbor.g) { neighbor.parent = currentNode; neighbor.g = tentativeG; neighbor.h = Math.abs(neighbor.x - endNode.x) + Math.abs(neighbor.y - endNode.y); neighbor.f = neighbor.g + neighbor.h; if (!openSet.includes(neighbor)) { openSet.push(neighbor); } }
         }
     }
-    return []; // No path found
+    return [];
 }
-
 
 // --- 6. GAME LOGIC ---
 function playSound(sound) { sound.currentTime = 0; sound.play().catch(error => { console.log("Sound playback was prevented.", error); }); }
@@ -158,20 +99,19 @@ function updateAI(currentTime) {
     enemies.forEach(enemy => {
         if (currentTime - enemy.lastPathRecalculationTime > enemy.pathRecalculationInterval) {
             enemy.lastPathRecalculationTime = currentTime;
+            const startCol = Math.floor((enemy.x + enemy.width / 2) / TILE_SIZE);
+            const startRow = Math.floor((enemy.y + enemy.height / 2) / TILE_SIZE);
+            const endCol = Math.floor((player.x + player.width / 2) / TILE_SIZE);
+            const endRow = Math.floor((player.y + player.height / 2) / TILE_SIZE);
 
-            const startCol = Math.round(enemy.x / TILE_SIZE);
-            const startRow = Math.round(enemy.y / TILE_SIZE);
-            const endCol = Math.round(player.x / TILE_SIZE);
-            const endRow = Math.round(player.y / TILE_SIZE);
-
-            if (startCol !== endCol || startRow !== endRow) {
+            if ((startCol !== endCol || startRow !== endRow) && !levelMap[endRow][endCol]) {
                  enemy.path = astar(levelMap, {x: startCol, y: startRow}, {x: endCol, y: endRow});
             }
         }
     });
 }
 
-// The "Body": Follows the pre-calculated path
+// The "Body": This function now reliably follows the path
 function followPath() {
     enemies.forEach(enemy => {
         if (enemy.path.length === 0) {
@@ -181,33 +121,42 @@ function followPath() {
         }
 
         const nextStep = enemy.path[0];
-        const targetX = nextStep.x * TILE_SIZE;
-        const targetY = nextStep.y * TILE_SIZE;
+        // Target the CENTER of the next tile
+        const targetX = nextStep.x * TILE_SIZE + (TILE_SIZE - enemy.width) / 2;
+        const targetY = nextStep.y * TILE_SIZE + (TILE_SIZE - enemy.height) / 2;
 
         const vecX = targetX - enemy.x;
         const vecY = targetY - enemy.y;
         const distance = Math.sqrt(vecX * vecX + vecY * vecY);
 
+        // If we are close enough to the target tile, snap to it and move to the next step
         if (distance < enemy.speed) {
+            enemy.x = targetX;
+            enemy.y = targetY;
             enemy.path.shift();
         } else {
+            // Otherwise, move towards the target
             const normalizedX = vecX / distance;
             const normalizedY = vecY / distance;
             enemy.dx = normalizedX * enemy.speed;
             enemy.dy = normalizedY * enemy.speed;
+
+            // Move the enemy (without collision checks, as the path is already valid)
+            enemy.x += enemy.dx;
+            enemy.y += enemy.dy;
         }
     });
 }
 
-// The robust collision system
-function updatePositions() {
-    allCharacters.forEach(char => {
-        if (char.dx === 0 && char.dy === 0) return;
-        char.x += char.dx;
-        for (let r=0;r<MAP_NUM_ROWS;r++) for(let c=0;c<MAP_NUM_COLS;c++) if(levelMap[r][c]===1){const wall={x:c*TILE_SIZE,y:r*TILE_SIZE,width:TILE_SIZE,height:TILE_SIZE};if(char.x<wall.x+wall.width&&char.x+char.width>wall.x&&char.y<wall.y+wall.height&&char.y+char.height>wall.y){if(char.dx>0)char.x=wall.x-char.width;else if(char.dx<0)char.x=wall.x+wall.width;break;}}
-        char.y += char.dy;
-        for (let r=0;r<MAP_NUM_ROWS;r++) for(let c=0;c<MAP_NUM_COLS;c++) if(levelMap[r][c]===1){const wall={x:c*TILE_SIZE,y:r*TILE_SIZE,width:TILE_SIZE,height:TILE_SIZE};if(char.x<wall.x+wall.width&&char.x+char.width>wall.x&&char.y<wall.y+wall.height&&char.y+char.height>wall.y){if(char.dy>0)char.y=wall.y-char.height;else if(char.dy<0)char.y=wall.y+wall.height;break;}}
-    });
+// This function now only handles the PLAYER's movement and collision
+function updatePlayerPosition() {
+    if (player.dx === 0 && player.dy === 0) return;
+
+    player.x += player.dx;
+    for (let r=0;r<MAP_NUM_ROWS;r++) for(let c=0;c<MAP_NUM_COLS;c++) if(levelMap[r][c]===1){const wall={x:c*TILE_SIZE,y:r*TILE_SIZE,width:TILE_SIZE,height:TILE_SIZE};if(player.x<wall.x+wall.width&&player.x+player.width>wall.x&&player.y<wall.y+wall.height&&player.y+player.height>wall.y){if(player.dx>0)player.x=wall.x-player.width;else if(player.dx<0)player.x=wall.x+wall.width;break;}}
+
+    player.y += player.dy;
+    for (let r=0;r<MAP_NUM_ROWS;r++) for(let c=0;c<MAP_NUM_COLS;c++) if(levelMap[r][c]===1){const wall={x:c*TILE_SIZE,y:r*TILE_SIZE,width:TILE_SIZE,height:TILE_SIZE};if(player.x<wall.x+wall.width&&player.x+player.width>wall.x&&player.y<wall.y+wall.height&&player.y+player.height>wall.y){if(player.dy>0)player.y=wall.y-player.height;else if(player.dy<0)player.y=wall.y+wall.height;break;}}
 }
 
 function showGameOver() { gameOverScreen.classList.add('visible'); }
@@ -231,8 +180,8 @@ function update(currentTime = 0) {
         return;
     }
     updateAI(currentTime);
-    followPath();
-    updatePositions();
+    followPath(); // Enemies move according to their path
+    updatePlayerPosition(); // Player moves according to input
     checkPlayerEnemyCollision();
     draw();
     requestAnimationFrame(update);

@@ -213,4 +213,4 @@ window.addEventListener('DOMContentLoaded', () => {
     drawMap();
     function loadImage(imgElement) { return new Promise(resolve => { if (imgElement.complete) { resolve(); } else { imgElement.onload = resolve; imgElement.onerror = resolve; } }); }
     Promise.all([ loadImage(dragonImg), loadImage(catImg), loadImage(robotImg) ]).then(() => { update(); });
-});```
+});

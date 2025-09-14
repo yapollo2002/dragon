@@ -2,10 +2,13 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const gameOverScreen = document.getElementById('game-over-screen');
-const restartBtn = document.getElementById('restart-btn');
+const winScreen = document.getElementById('win-screen'); // NEW
+const restartBtnLose = document.getElementById('restart-btn-lose');
+const restartBtnWin = document.getElementById('restart-btn-win'); // NEW
 const dragonImg = document.getElementById('dragon-sprite');
 const catImg = document.getElementById('cat-sprite');
 const robotImg = document.getElementById('robot-sprite');
+const doorImg = document.getElementById('door-sprite'); // NEW
 const moveSound = document.getElementById('move-sound');
 const gameOverSound = document.getElementById('game-over-sound');
 
@@ -16,32 +19,40 @@ const MAP_NUM_COLS = 20;
 canvas.width = MAP_NUM_COLS * TILE_SIZE;
 canvas.height = MAP_NUM_ROWS * TILE_SIZE;
 
-// --- 3. GAME STATE (SPEEDS UPDATED) ---
+// --- 3. GAME STATE (SPEEDS & NEW OBJECTS) ---
 let isGameOver = false;
+let isGameWon = false; // NEW
 const player = {
     x: TILE_SIZE * 1, y: TILE_SIZE * 7,
     width: TILE_SIZE, height: TILE_SIZE,
     speed: 4, dx: 0, dy: 0, isMoving: false
 };
 const cat = {
-    img: catImg, x: TILE_SIZE * 18, y: TILE_SIZE * 1,
+    img: catImg, x: TILE_SIZE * 18, y: TILE_SIZE * 13, // Swapped starting positions
     width: TILE_SIZE, height: TILE_SIZE,
-    speed: 2.2, // <<<<<< CHANGED: Was 4.4, now halved
+    speed: 2.9, // <<<<<< CHANGED: 2.2 * 1.3 = 2.86, rounded
     dx: 0, dy: 0,
     path: [], pathRecalculationInterval: 500, lastPathRecalculationTime: 0
 };
 const robot = {
-    img: robotImg, x: TILE_SIZE * 18, y: TILE_SIZE * 13,
+    img: robotImg, x: TILE_SIZE * 1, y: TILE_SIZE * 1, // Swapped starting positions
     width: TILE_SIZE, height: TILE_SIZE,
-    speed: 1.8, // <<<<<< CHANGED: Was 3.6, now halved
+    speed: 2.3, // <<<<<< CHANGED: 1.8 * 1.3 = 2.34, rounded
     dx: 0, dy: 0,
     path: [], pathRecalculationInterval: 500, lastPathRecalculationTime: 0
+};
+// NEW: The exit door object
+const door = {
+    x: TILE_SIZE * 18,
+    y: TILE_SIZE * 1,
+    width: TILE_SIZE,
+    height: TILE_SIZE
 };
 const enemies = [cat, robot];
 const levelMap = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-    [1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+    [1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
     [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1],
     [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
@@ -60,6 +71,7 @@ const levelMap = [
 function draw() {
     clearCanvas();
     drawMap();
+    drawDoor(); // NEW
     drawEnemies();
     drawPlayer();
 }
@@ -67,6 +79,7 @@ function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 function drawPlayer() { ctx.drawImage(dragonImg, player.x, player.y, player.width, player.height); }
 function drawMap() { for (let r = 0; r < MAP_NUM_ROWS; r++) { for (let c = 0; c < MAP_NUM_COLS; c++) { if (levelMap[r][c] === 1) { ctx.fillStyle = '#228B22'; ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE); } } } }
 function drawEnemies() { enemies.forEach(enemy => { ctx.drawImage(enemy.img, enemy.x, enemy.y, enemy.width, enemy.height); }); }
+function drawDoor() { ctx.drawImage(doorImg, door.x, door.y, door.width, door.height); } // NEW
 
 // --- 5. A* PATHFINDING ALGORITHM ---
 function astar(grid, start, end) {
@@ -100,6 +113,14 @@ function astar(grid, start, end) {
 // --- 6. GAME LOGIC ---
 function playSound(sound) { sound.currentTime = 0; sound.play().catch(error => { console.log("Sound playback was prevented.", error); }); }
 function checkPlayerEnemyCollision() { enemies.forEach(enemy => { if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x && player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) { if (!isGameOver) { playSound(gameOverSound); isGameOver = true; } } }); }
+
+// NEW: Check if the player has reached the door
+function checkWinCondition() {
+    if (player.x < door.x + door.width && player.x + player.width > door.x &&
+        player.y < door.y + door.height && player.y + player.height > door.y) {
+        isGameWon = true;
+    }
+}
 
 // The "Brain": Recalculates the A* path on a timer
 function updateAI(currentTime) {
@@ -162,6 +183,7 @@ function updatePlayerPosition() {
 }
 
 function showGameOver() { gameOverScreen.classList.add('visible'); }
+function showWinScreen() { winScreen.classList.add('visible'); } // NEW
 
 // --- 7. INPUT HANDLERS ---
 function startMovement() { if (!player.isMoving && (player.dx !== 0 || player.dy !== 0)) { playSound(moveSound); player.isMoving = true; } }
@@ -173,7 +195,10 @@ addTouchAndMouseListeners(upBtn,    () => player.dy = -player.speed, () => playe
 addTouchAndMouseListeners(downBtn,  () => player.dy = player.speed,  () => player.dy = 0);
 addTouchAndMouseListeners(leftBtn,  () => player.dx = -player.speed, () => player.dx = 0);
 addTouchAndMouseListeners(rightBtn, () => player.dx = player.speed,  () => player.dx = 0);
-restartBtn.addEventListener('click', () => { location.reload(); });
+
+// NEW: Event listeners for both restart buttons
+restartBtnLose.addEventListener('click', () => { location.reload(); });
+restartBtnWin.addEventListener('click', () => { location.reload(); });
 
 // --- 8. THE GAME LOOP ---
 function update(currentTime = 0) {
@@ -181,10 +206,16 @@ function update(currentTime = 0) {
         showGameOver();
         return;
     }
+    if (isGameWon) { // NEW
+        showWinScreen();
+        return;
+    }
+
     updateAI(currentTime);
     followPath();
     updatePlayerPosition();
     checkPlayerEnemyCollision();
+    checkWinCondition(); // NEW
     draw();
     requestAnimationFrame(update);
 }
@@ -193,5 +224,13 @@ function update(currentTime = 0) {
 window.addEventListener('DOMContentLoaded', () => {
     drawMap();
     function loadImage(imgElement) { return new Promise(resolve => { if (imgElement.complete) { resolve(); } else { imgElement.onload = resolve; imgElement.onerror = resolve; } }); }
-    Promise.all([ loadImage(dragonImg), loadImage(catImg), loadImage(robotImg) ]).then(() => { update(); });
+    // NEW: Add the door image to the loading process
+    Promise.all([
+        loadImage(dragonImg),
+        loadImage(catImg),
+        loadImage(robotImg),
+        loadImage(doorImg)
+    ]).then(() => {
+        update();
+    });
 });

@@ -1,4 +1,4 @@
-/* --- General Page Styles (Unchanged) --- */
+/* --- General Page Styles --- */
 body {
     background-color: #1a1a1a;
     color: #ffffff;
@@ -12,13 +12,12 @@ body {
 }
 h1 { margin: 0 0 10px 0; font-size: 1.5em; }
 
-/* --- Game Container Style (Unchanged) --- */
+/* --- Game Container Style --- */
 #game-container { position: relative; width: fit-content; height: fit-content; }
 
-/* --- Game Canvas Style (COLOR CHANGED) --- */
+/* --- Game Canvas Style --- */
 #gameCanvas {
-    /* CHANGED: This is now the green floor of the labyrinth */
-    background-color: #556B2F; /* A dark olive green */
+    background-color: #556B2F;
     border: 3px solid #f0f0f0;
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
     max-width: 100%;
@@ -26,13 +25,35 @@ h1 { margin: 0 0 10px 0; font-size: 1.5em; }
     display: block;
 }
 
-/* --- Game Over Screen Styles (Unchanged) --- */
-#game-over-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); color: white; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+/* --- Game Over Screen Styles --- */
+#game-over-screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(40, 0, 0, 0.75); /* Dark red tint */
+    color: white;
+    display: none;
+    flex-direction: column; justify-content: center; align-items: center; text-align: center;
+}
 #game-over-screen.visible { display: flex; }
-#restart-btn { padding: 10px 20px; font-size: 16px; color: black; background-color: #fff; border: 2px solid #ccc; border-radius: 10px; cursor: pointer; margin-top: 20px; }
-#restart-btn:hover { background-color: #eee; }
 
-/* --- On-Screen Controls Styles (Unchanged) --- */
+/* --- New Win Screen Styles --- */
+#win-screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 20, 40, 0.75); /* Dark blue tint */
+    color: white;
+    display: none;
+    flex-direction: column; justify-content: center; align-items: center; text-align: center;
+}
+#win-screen.visible { display: flex; }
+
+
+/* --- Shared Button Style --- */
+.restart-btn {
+    padding: 10px 20px; font-size: 16px; color: black; background-color: #fff;
+    border: 2px solid #ccc; border-radius: 10px; cursor: pointer; margin-top: 20px;
+}
+.restart-btn:hover { background-color: #eee; }
+
+/* --- On-Screen Controls Styles --- */
 #controls { margin-top: 15px; user-select: none; -webkit-user-select: none; }
 .d-pad { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; }
 #up-btn { grid-area: up; }
